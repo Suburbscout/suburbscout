@@ -1,0 +1,177 @@
+---
+export interface Props {
+  suburb: string;
+  state: string;
+  postcode: string;
+  description: string;
+}
+const { suburb, state, postcode, description } = Astro.props;
+const title = `${suburb}, ${state} ${postcode} — Suburb Profile & Review | SuburbScout`;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  <meta name="description" content={`${suburb} suburb profile: population, crime rates, property prices, schools, commute times and more. Free suburb guide for ${suburb}, ${state}.`} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description?.substring(0, 160)} />
+  <meta property="og:type" content="website" />
+  <link rel="canonical" href={canonicalURL} />
+
+  <!-- Google AdSense — replace ca-pub-XXXXXXXXXXXXXXXX with your publisher ID -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/global.css" />
+
+  <!-- JSON-LD structured data for Google -->
+  <script type="application/ld+json">
+  {JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Place",
+    "name": `${suburb}, ${state}`,
+    "description": description,
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": suburb,
+      "addressRegion": state,
+      "postalCode": postcode,
+      "addressCountry": "AU"
+    }
+  })}
+  </script>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <span class="logo-mark">S</span>
+        <span class="logo-text">SuburbScout</span>
+        <span class="logo-tagline">Australia</span>
+      </a>
+      <nav class="nav">
+        <a href="/compare">Compare</a>
+        <a href="/quiz">Find My Suburb</a>
+        <a href="/top-10">Top 10 Lists</a>
+        <a href="/tools">Tools</a>
+      </nav>
+      <div class="header-search">
+        <input type="text" placeholder="Search suburb or postcode…" id="headerSearch" />
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== TOP LEADERBOARD AD ===== -->
+  <div class="ad-leaderboard">
+    <div class="container">
+      <ins class="adsbygoogle"
+        style="display:block"
+        data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+        data-ad-slot="1234567890"
+        data-ad-format="auto"
+        data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+  </div>
+
+  <!-- ===== BREADCRUMB ===== -->
+  <div class="breadcrumb">
+    <div class="container">
+      <a href="/">Home</a> &rsaquo;
+      <a href={`/${state.toLowerCase()}`}>{state}</a> &rsaquo;
+      <span>{suburb}</span>
+    </div>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="container main-grid">
+    <article class="main-content">
+      <slot />
+    </article>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+      <!-- Sticky rectangle ad -->
+      <div class="ad-sticky">
+        <p class="ad-label">Advertisement</p>
+        <ins class="adsbygoogle"
+          style="display:inline-block;width:300px;height:250px"
+          data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+          data-ad-slot="0987654321"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      </div>
+
+      <!-- Compare widget -->
+      <div class="sidebar-widget">
+        <h3>Compare suburbs</h3>
+        <input type="text" placeholder="Add a suburb to compare…" class="compare-input" />
+        <a href={`/compare?a=${suburb.toLowerCase().replace(' ', '-')}-${state.toLowerCase()}`} class="btn-compare">Compare with {suburb} →</a>
+      </div>
+
+      <!-- Nearby suburbs -->
+      <div class="sidebar-widget" id="nearby-suburbs">
+        <h3>Nearby suburbs</h3>
+        <p class="loading-text">Loading…</p>
+      </div>
+
+      <!-- Second rectangle ad -->
+      <div class="ad-sticky">
+        <p class="ad-label">Advertisement</p>
+        <ins class="adsbygoogle"
+          style="display:inline-block;width:300px;height:250px"
+          data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+          data-ad-slot="1122334455"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ===== IN-CONTENT AD (between sections, injected by suburb page) ===== -->
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>SuburbScout Australia</strong>
+        <p>Free, independent suburb profiles for every postcode in Australia.</p>
+      </div>
+      <div>
+        <strong>Explore</strong>
+        <a href="/nsw">New South Wales</a>
+        <a href="/vic">Victoria</a>
+        <a href="/qld">Queensland</a>
+        <a href="/wa">Western Australia</a>
+        <a href="/sa">South Australia</a>
+        <a href="/tas">Tasmania</a>
+      </div>
+      <div>
+        <strong>Tools</strong>
+        <a href="/quiz">Find My Suburb Quiz</a>
+        <a href="/compare">Suburb Comparison</a>
+        <a href="/tools/commute">Commute Finder</a>
+        <a href="/top-10">Top 10 Lists</a>
+      </div>
+      <div>
+        <strong>About</strong>
+        <a href="/about">About SuburbScout</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/contact">Contact</a>
+        <a href="/sitemap.xml">Sitemap</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <p>© 2025 SuburbScout. Data sourced from ABS, state government open data, and public records. Not financial advice.</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

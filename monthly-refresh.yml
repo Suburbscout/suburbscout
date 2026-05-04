@@ -1,0 +1,87 @@
+name: Monthly suburb data refresh
+
+on:
+  schedule:
+    # Runs at 9:00 AM AEST on the 1st of every month
+    - cron: '0 23 1 * *'
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      suburb_batch:
+        description: 'Which batch to update (e.g. nsw-1, vic-1, all)'
+        required: false
+        default: 'oldest-50'
+
+jobs:
+  refresh-suburbs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run suburb refresh
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude --print "
+          You are updating suburb data for SuburbScout.
+          
+          Task: Update the 50 suburb files in src/content/suburbs/ that have the oldest
+          'last_updated' date in their frontmatter.
+          
+          For each suburb:
+          1. Read the existing file
+          2. Search the web for current median house price and rent
+          3. Check for any significant crime or safety news in the past 6 months
+          4. Update only the data fields that have changed (prices, crime_rank)
+          5. Update last_updated to $(date +%Y-%m)
+          6. Save the file
+          
+          Do NOT rewrite descriptions unless data is significantly wrong.
+          Confirm each update before moving to the next.
+          " --allowedTools "Bash,Read,Write,WebSearch"
+
+      - name: Commit updated suburb files
+        run: |
+          git config user.name "SuburbScout Bot"
+          git config user.email "bot@suburbscout.com.au"
+          git add src/content/suburbs/
+          git diff --staged --quiet || git commit -m "Monthly suburb data refresh — $(date +%B %Y)"
+          git push
+
+  build-and-deploy:
+    needs: refresh-suburbs
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Astro site
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist

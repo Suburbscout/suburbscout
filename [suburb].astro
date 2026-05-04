@@ -1,0 +1,181 @@
+---
+// src/pages/[state]/[suburb].astro
+// Dynamic route — generates one page per suburb from content/suburbs/*.md
+
+import SuburbLayout from '../../layouts/SuburbLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const suburbs = await getCollection('suburbs');
+  return suburbs.map(entry => ({
+    params: { state: entry.data.state.toLowerCase(), suburb: entry.slug },
+    props: { entry }
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+const d = entry.data;
+
+// Helper: score colour
+function scoreColor(score: number) {
+  if (score >= 7.5) return '#1a6b3a';
+  if (score >= 5) return '#c9882a';
+  return '#c0392b';
+}
+
+// Rating categories shown in breakdown
+const ratingCategories = [
+  { label: 'Affordability (buying)', key: 'rating_affordability_buy' },
+  { label: 'Affordability (renting)', key: 'rating_affordability_rent' },
+  { label: 'Family friendliness', key: 'rating_family' },
+  { label: 'Nature & greenery', key: 'rating_nature' },
+  { label: 'Safety', key: 'rating_safety' },
+  { label: 'Public transport', key: 'rating_transport' },
+  { label: 'Things to do', key: 'rating_things_to_do' },
+  { label: 'Noise level', key: 'rating_noise' },
+];
+---
+
+<SuburbLayout suburb={d.name} state={d.state} postcode={d.postcode} description={d.summary}>
+
+  <!-- HERO -->
+  <div class="suburb-hero">
+    <h1>{d.name}, {d.state} {d.postcode}</h1>
+    <p class="suburb-meta">
+      <strong>{d.lga}</strong> &bull; {d.region} &bull; {d.state}
+    </p>
+
+    <!-- Scout Score -->
+    <div class="scout-score">
+      <div>
+        <div class="scout-score-num" style={`color: white`}>{d.scout_score.toFixed(1)}</div>
+        <div class="scout-score-label">Scout Score / 10</div>
+      </div>
+      <div class="scout-score-tagline">{d.scout_verdict}</div>
+    </div>
+
+    <!-- Risk badges -->
+    <div class="risk-row">
+      <span class={`risk-badge risk-${d.flood_risk.toLowerCase()}`}>
+        Flood risk: {d.flood_risk}
+      </span>
+      <span class={`risk-badge risk-${d.bushfire_risk.toLowerCase()}`}>
+        Bushfire risk: {d.bushfire_risk}
+      </span>
+      <span class="risk-badge risk-low">
+        Crime rank: {d.crime_rank}/100 (lower = safer)
+      </span>
+    </div>
+  </div>
+
+  <!-- KEY STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{d.population.toLocaleString()}</div>
+      <div class="stat-label">Population</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${(d.median_house_price / 1000000).toFixed(2)}m</div>
+      <div class="stat-label">Median house price</div>
+      <div class="stat-sub">{d.price_growth_5yr > 0 ? '+' : ''}{d.price_growth_5yr}% over 5 yrs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${d.median_rent_pw}/wk</div>
+      <div class="stat-label">Median rent</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{d.commute_train_mins} min</div>
+      <div class="stat-label">CBD by train</div>
+      <div class="stat-sub">{d.nearest_station} station</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{d.commute_drive_mins} min</div>
+      <div class="stat-label">CBD by car</div>
+      <div class="stat-sub">Off-peak estimate</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{d.median_age}</div>
+      <div class="stat-label">Median age</div>
+    </div>
+  </div>
+
+  <!-- IN-CONTENT AD -->
+  <div class="ad-in-content">
+    <p style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Advertisement</p>
+    <ins class="adsbygoogle"
+      style="display:block"
+      data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+      data-ad-slot="5566778899"
+      data-ad-format="auto"
+      data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+
+  <!-- RATING BREAKDOWN -->
+  <h2 class="section-heading">Rating breakdown</h2>
+  <div class="ratings-grid">
+    {ratingCategories.map(cat => {
+      const score = d[cat.key] ?? 5;
+      return (
+        <div class="rating-item">
+          <div class="rating-label">{cat.label}</div>
+          <div class="rating-bar-bg">
+            <div class="rating-bar-fill" style={`width: ${score * 10}%; background: ${scoreColor(score)}`}></div>
+          </div>
+          <div class="rating-score">{score.toFixed(1)} / 10</div>
+        </div>
+      );
+    })}
+  </div>
+
+  <!-- SUBURB DESCRIPTION -->
+  <h2 class="section-heading">About {d.name}</h2>
+  <div class="suburb-description">
+    <Content />
+  </div>
+
+  <!-- COMPARE CTA -->
+  <div class="compare-cta">
+    <p>Considering {d.name}? Compare it side-by-side with another suburb.</p>
+    <a href={`/compare?a=${entry.slug}`} class="btn-green">Compare suburbs →</a>
+  </div>
+
+  <!-- SCHOOLS -->
+  <h2 class="section-heading">Nearby schools</h2>
+  <ul class="schools-list">
+    {d.schools?.map((school: any) => (
+      <li>
+        <span>{school.name}</span>
+        <span class="school-type">{school.type} · NAPLAN band {school.naplan_band}</span>
+      </li>
+    ))}
+  </ul>
+
+  <!-- IN-CONTENT AD 2 -->
+  <div class="ad-in-content">
+    <p style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Advertisement</p>
+    <ins class="adsbygoogle"
+      style="display:block"
+      data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+      data-ad-slot="4433221100"
+      data-ad-format="auto"
+      data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+
+  <!-- DEMOGRAPHICS -->
+  <h2 class="section-heading">Demographics</h2>
+  <div class="suburb-description" style="padding: 16px 20px;">
+    <p><strong>Median age:</strong> {d.median_age} years</p>
+    <p><strong>Top ethnic backgrounds:</strong> {d.ethnic_breakdown?.join(', ')}</p>
+    <p><strong>Housing commission:</strong> {d.housing_commission_pct}%</p>
+    <p><strong>Ideal for:</strong> {d.ideal_for?.join(', ')}</p>
+  </div>
+
+  <!-- LAST UPDATED NOTE -->
+  <p style="font-size:12px;color:#aaa;margin-top:24px">
+    Data last updated: {d.last_updated} — sourced from ABS Census, state government crime data, and public property records.
+  </p>
+
+</SuburbLayout>
